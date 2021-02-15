@@ -36,15 +36,16 @@
 ;
 ;
 ;; CluckFox - registers are defined elsewhere now
+ALIGN 256
 WOZFP:
 ;
 ;
 ;     NATURAL LOG OF MANT/EXP1 WITH RESULT IN MANT/EXP1
 ;
 LOG:    LDA M1
-        BEQ ERROR
+        BEQ FRROR
         BPL CONT    ; IF ARG>0 OK
-ERROR:  BRK         ; ERROR ARG<=0
+FRROR:  BRK         ; ERROR ARG<=0
 ;
 CONT:  JSR SWAP    ; MOVE ARG TO EXP/MANT2
        LDX #0      ; LOAD X FOR HIGH BYTE OF EXPONENT
@@ -53,9 +54,10 @@ CONT:  JSR SWAP    ; MOVE ARG TO EXP/MANT2
        STY X2      ; SET EXPONENT 2 TO 0 ($80)
        EOR #$80    ; COMPLEMENT SIGN BIT OF ORIGINAL EXPONENT
        STA M1+1    ; SET EXPONENT INTO MANTISSA 1 FOR FLOAT
-       BPL *+3     ; IS EXPONENT NEGATIVE
+       BPL +       ; IS EXPONENT NEGATIVE
        DEX         ; YES, SET X TO $FF
        STX M1      ; SET UPPER BYTE OF EXPONENT
++
        JSR FLOAT   ; CONVERT TO FLOATING POINT
        LDX #3      ; 4 BYTE TRANSFERS
 SEXP1: LDA X2,X
@@ -160,9 +162,7 @@ C:     .byte $80, $6A, $08, $66 ; 1.6567626
 
 MHLF:  .byte $7F, $40, $00, $00 ; 0.5
 
-;
-       .res $1e00-*
-       .org $1E00   ; STARTING LOCATION FOR EXP
+ALIGN 256
 ;
 ;     EXP OF MANT/EXP1 RESULT IN MANT/EXP1
 ;
@@ -285,12 +285,11 @@ C2:    .byte $7B, $46, $FA, $70 ; .03465735903
 
 D:     .byte $83, $4F, $A3, $03 ; 9.9545957821
 
+ALIGN 256
 ;
 ;
 ;     BASIC FLOATING POINT ROUTINES
 ;
-       .res $1F00-*
-       .org $1F00  ; START OF BASIC FLOATING POINT ROUTINES
 ADD:   CLC         ; CLEAR CARRY
        LDX #$02    ; INDEX FOR 3-BYTE ADD
 ADD1:  LDA M1,X
@@ -448,5 +447,3 @@ FIX:   LDA X1      ; CHECK EXPONENT
        CMP #$8E    ; IS EXPONENT 14?
        BNE FIX-3   ; NO, SHIFT
 RTRN:  RTS         ; RETURN
-
-       .include "util.s"
